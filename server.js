@@ -55,18 +55,20 @@ const issueSchema = new mongoose.Schema(
     status: { type: String, default: 'Pending' },
     citizen: { type: String, default: 'Anonymous' },
     location: { type: String, default: 'Ranchi, Jharkhand' },
+    safetyRisk: { type: Boolean, default: false },
+    additional: { type: String },
     imageUrl: { type: String },
   },
   { timestamps: true }
 );
 
-issueSchema.pre('save', async function (next) {
+// AFTER (Fixed):
+issueSchema.pre('save', async function () {
   if (!this.customId) {
     const count = await mongoose.model('Issue').countDocuments();
     const sequence = String(count + 1).padStart(4, '0');
     this.customId = `JS-${sequence}`;
   }
-  next();
 });
 
 // Explicitly binding to the 'issues' collection inside 'hackathon' database
@@ -79,24 +81,28 @@ const Issue = mongoose.model('Issue', issueSchema, 'issues');
 // Create new report
 app.post('/api/complaints', upload.single('image'), async (req, res) => {
   try {
-    const { title, category, description, citizen, priority, location } = req.body;
+    const { title, category, description, citizen, severity, priority, location, safetyRisk, additional } = req.body;
+
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     const newIssue = new Issue({
-      title: title || `${category} issue near ${location || 'service area'}`,
-      category,
-      description,
+      title: title || `${category || 'Civic'} issue`,
+      category: category || 'General',
+      description: description || 'No description provided',
       citizen: citizen || 'Anonymous Citizen',
-      priority: priority || 'Medium',
+      priority: severity || priority || 'Medium', // Maps severity from frontend to priority in DB
       location: location || 'Ranchi, Jharkhand',
+      safetyRisk: safetyRisk === 'true' || safetyRisk === true,
+      additional: additional || '',
       imageUrl,
     });
 
     await newIssue.save();
+    console.log('Saved new complaint:', newIssue.customId);
     res.status(201).json({ message: 'Issue recorded successfully', issue: newIssue });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to record issue.' });
+    console.error('Save Error:', error);
+    res.status(500).json({ error: error.message || 'Failed to record issue.' });
   }
 });
 

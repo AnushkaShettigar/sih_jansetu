@@ -15,11 +15,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({
-  origin: '*', // Allows requests from any origin (e.g. http://localhost:5173)
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: '*', 
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 app.use(express.json());
 
 // Setup file uploads directory
@@ -38,7 +40,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// MongoDB Connection targeting the 'hackathon' database
+// MongoDB Connection
 const MONGO_URI =
   process.env.MONGO_URI ||
   'mongodb+srv://khushalimistry_db_user:A1q8ko43vYRcwsMo@sih.oxkh9pc.mongodb.net/hackathon?appName=SIH';
@@ -48,7 +50,7 @@ mongoose
   .then(() => console.log('MongoDB Connected to "hackathon" database successfully'))
   .catch((err) => console.error('MongoDB Connection Error:', err));
 
-// Schema matching your existing 'issues' collection
+// Schema Definition
 const issueSchema = new mongoose.Schema(
   {
     customId: { type: String },
@@ -58,7 +60,7 @@ const issueSchema = new mongoose.Schema(
     priority: { type: String, default: 'Medium' },
     status: { type: String, default: 'Pending' },
     citizen: { type: String, default: 'Anonymous' },
-    location: { type: String, default: 'Ranchi, Jharkhand' },
+    location: { type: String, default: 'Mumbai, Maharashtra' },
     safetyRisk: { type: Boolean, default: false },
     additional: { type: String },
     imageUrl: { type: String },
@@ -66,7 +68,6 @@ const issueSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// AFTER (Fixed):
 issueSchema.pre('save', async function () {
   if (!this.customId) {
     const count = await mongoose.model('Issue').countDocuments();
@@ -75,7 +76,6 @@ issueSchema.pre('save', async function () {
   }
 });
 
-// Explicitly binding to the 'issues' collection inside 'hackathon' database
 const Issue = mongoose.model('Issue', issueSchema, 'issues');
 
 // =================================================================
@@ -94,8 +94,8 @@ app.post('/api/complaints', upload.single('image'), async (req, res) => {
       category: category || 'General',
       description: description || 'No description provided',
       citizen: citizen || 'Anonymous Citizen',
-      priority: severity || priority || 'Medium', // Maps severity from frontend to priority in DB
-      location: location || 'Ranchi, Jharkhand',
+      priority: severity || priority || 'Medium',
+      location: location || 'Mumbai, Maharashtra',
       safetyRisk: safetyRisk === 'true' || safetyRisk === true,
       additional: additional || '',
       imageUrl,
@@ -110,7 +110,7 @@ app.post('/api/complaints', upload.single('image'), async (req, res) => {
   }
 });
 
-// Admin Stats
+// Admin Stats Endpoint
 app.get('/api/admin/stats', async (req, res) => {
   try {
     const total = await Issue.countDocuments();
@@ -124,21 +124,42 @@ app.get('/api/admin/stats', async (req, res) => {
   }
 });
 
-// Admin Reports Queue
+// Admin/Public Reports Endpoint
 app.get('/api/admin/reports', async (req, res) => {
   try {
     const reports = await Issue.find().sort({ createdAt: -1 });
-    const formatted = reports.map((r) => ({
-      id: r.customId || r._id,
-      mongoId: r._id,
-      title: r.title || r.description,
-      category: r.category,
-      priority: r.priority || 'Medium',
-      status: r.status || 'Pending',
-      citizen: r.citizen || 'Anonymous',
-    }));
+
+    const formatted = reports.map((r) => {
+      // Safe coordinate parser to avoid map render crashes
+      let coords = [19.076, 72.8777]; // Default Mumbai center
+      if (r.location && r.location.includes(',')) {
+        const parts = r.location.split(',').map((p) => parseFloat(p.trim()));
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          coords = parts;
+        }
+      }
+
+      return {
+        id: r.customId || String(r._id),
+        mongoId: String(r._id),
+        title: r.title || r.category || 'Civic Complaint',
+        description: r.description || 'No description available',
+        category: r.category || 'General',
+        priority: r.priority || 'Medium',
+        severity: r.priority || 'Medium',
+        status: r.status || 'Pending',
+        citizen: r.citizen || 'Anonymous',
+        location: r.location || 'Mumbai, Maharashtra',
+        city: 'Mumbai',
+        coordinates: coords,
+        imageUrl: r.imageUrl ? `http://localhost:${PORT}${r.imageUrl}` : null,
+        createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+      };
+    });
+
     res.status(200).json(formatted);
   } catch (error) {
+    console.error('Fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch issues.' });
   }
 });

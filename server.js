@@ -5,12 +5,14 @@ import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']); // Forces Node.js to use Google & Cloudflare DNS
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.1:27017/jansetu';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://khushalimistry_db_user:A1q8ko43vYRcwsMo@sih.oxkh9pc.mongodb.net/?appName=SIH';
 
 // Middleware
 app.use(cors());

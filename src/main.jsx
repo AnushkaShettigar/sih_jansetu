@@ -1,10 +1,33 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
+import Login from './login.jsx'
+import AdminDashboard from './adminDashboard.jsx'
+import ReportComplaint from './pages/ReportComplaint'
+import ExploreReports from './pages/ExploreReports'
+import ComplaintDetails from './pages/ComplaintDetails'
+import ContactUs from './pages/ContactUs'
+import { isDemoAuthenticated } from './auth'
+
+function ProtectedRoute({ children }) {
+  return isDemoAuthenticated() ? children : <Navigate to="/login" replace />
+}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<ProtectedRoute><App /></ProtectedRoute>} />
+        <Route path="/report-complaint" element={<ProtectedRoute><ReportComplaint /></ProtectedRoute>} />
+        <Route path="/explore-reports" element={<ProtectedRoute><ExploreReports /></ProtectedRoute>} />
+        <Route path="/complaint/:id" element={<ProtectedRoute><ComplaintDetails /></ProtectedRoute>} />
+        <Route path="/contact" element={<ProtectedRoute><ContactUs /></ProtectedRoute>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   </StrictMode>,
 )

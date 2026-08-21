@@ -20,6 +20,30 @@ footer { max-width: 1180px; margin: auto; padding: 52px 0 26px; border-top: 1px 
 .upload-error { margin: 10px 0 0; color: #ffad9e; font-size: 11px; line-height: 1.4; }
 .nav-links.is-open { background: #fff; border-color: #f0e5dc; }.nav-links a { border-color: #f0e5dc; }.nav-links a:hover { color: #f97316; }
 
+/* Why JanSetu section */
+.why-section { max-width: none; min-height: 650px; margin: 0; padding: 125px max(28px, calc((100% - 1180px) / 2)) 120px; position: relative; overflow: hidden; background: #fff; }
+.why-content { position: relative; z-index: 1; max-width: 650px; }
+.why-kicker { display: inline-block; color: #1b2a5b; font: 700 11px Manrope, sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+.why-kicker:after { content: ''; display: block; width: 29px; height: 3px; margin-top: 12px; background: #f97316; }
+.why-section h2 { margin-top: 27px; color: #111827; font: 800 clamp(39px, 5vw, 66px)/1.06 Manrope, sans-serif; letter-spacing: -2.5px; }
+.why-section h2 em { color: #1b2a5b; font-style: normal; }
+.why-accent { width: 42px; height: 1px; margin: 30px 0 27px; background: #f97316; }
+.civic-flow { display: flex; align-items: center; gap: 18px; color: #1b2a5b; font: 700 11px Manrope, sans-serif; letter-spacing: 1.3px; }
+.civic-flow i { color: #f97316; font: 400 19px 'DM Sans', sans-serif; }
+.why-section p { max-width: 520px; margin: 31px 0 0; color: #4b5563; font-size: 14px; line-height: 1.75; }
+.chakra-art { position: absolute; z-index: 0; top: 50%; right: -105px; width: min(650px, 49vw); height: min(650px, 49vw); object-fit: contain; opacity: .27; transform: translateY(-50%); animation: chakra-spin 40s linear infinite; }
+@keyframes chakra-spin { from { transform: translateY(-50%) rotate(0deg); } to { transform: translateY(-50%) rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .chakra-art { animation: none; } }
+@media (max-width: 760px) {
+	.why-section { min-height: 820px; padding: 85px 22px 70px; }
+	.why-content { max-width: none; }
+	.why-section h2 { font-size: clamp(36px, 10vw, 54px); }
+	.civic-flow { max-width: 230px; align-items: flex-start; flex-direction: column; gap: 8px; }
+	.civic-flow i { line-height: 1; transform: rotate(90deg); }
+	.why-section p { max-width: 450px; }
+	.chakra-art { top: auto; right: -55px; bottom: -110px; width: min(500px, 115vw); height: min(500px, 115vw); transform: none; }
+}
+
 /* Hero redesign */
 .hero-section { min-height: 800px; max-width: none; margin: 0; padding: 135px max(28px, calc((100% - 1180px) / 2)) 0; display: block; overflow: hidden; position: relative; background: #fff; isolation: isolate; }
 .hero-section:before, .hero-section:after { display: none; }

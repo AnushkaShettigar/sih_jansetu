@@ -203,7 +203,6 @@ export async function assignComplaint(req, res) {
     complaint.updatedAt = new Date();
 
     await complaint.save();
-    await notifyStatusChange(complaint, previousStatus, complaint.status, req.user.id);
     await notifyAssignment(complaint, authorityUser._id);
 
     return res.status(200).json({ complaint: toPublicComplaint(complaint) });
@@ -347,7 +346,6 @@ export async function verifyResolution(req, res) {
     complaint.updatedAt = verifiedAt;
 
     await complaint.save();
-    await notifyStatusChange(complaint, 'resolved', 'closed', req.user.id);
     await notifyResolutionVerified(complaint, rating);
 
     return res.status(200).json({ complaint: toPublicComplaint(complaint) });
@@ -383,7 +381,6 @@ export async function reopenComplaint(req, res) {
       return res.status(400).json({ message: 'Only resolved or closed complaints can be reopened.' });
     }
 
-    const previousStatus = complaint.status;
     const reopenedAt = new Date();
     complaint.status = 'reopened';
     complaint.reopenedAt = reopenedAt;

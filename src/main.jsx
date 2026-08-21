@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import Login from './login.jsx'
 import AdminDashboard from './adminDashboard.jsx'
+import ReportComplaint from './pages/ReportComplaint'
 import { isDemoAuthenticated } from './auth'
 
 function ProtectedRoute({ children }) {
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<ProtectedRoute><App /></ProtectedRoute>} />
+        <Route path="/report-complaint" element={<ProtectedRoute><ReportComplaint /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />

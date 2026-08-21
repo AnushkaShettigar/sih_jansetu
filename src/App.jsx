@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
-import { ArrowUpRight, ChevronDown, CloudSun, Droplets, ImagePlus, Landmark, Menu, MapPin, Moon, Search, Sun, UserRound, X } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, CloudSun, Droplets, ImagePlus, Menu, MapPin, Moon, Search, Sun, UserRound, X } from 'lucide-react'
 import './App.css'
+import Footer from './components/Footer'
 
 const liveInfo = { location: 'Ranchi, Jharkhand', temperature: '28°C', condition: 'Partly cloudy', humidity: '—' }
 const weatherCondition = (code) => {
@@ -62,8 +63,6 @@ function GreenSection() {
     </div>
   </section>
 }
-function Footer() { return <footer id="about"><div className="footer-main"><div><Logo /><p>A citizen-focused civic service<br />platform for Jharkhand.</p></div><div className="footer-links"><span>Explore</span><a href="#report">Report issue</a><a href="#track">Track complaint</a><a href="#about">About JanSetu</a></div><div className="footer-official"><Landmark size={18} /><span>Government of<br /><b>Jharkhand</b></span></div></div><div className="footer-bottom"><span>© 2026 JanSetu. Built for the people of Jharkhand.</span><span>Public service, made simpler.</span></div></footer> }
-
 function App() {
   return <div className="app-shell"><Navbar /><main><Hero /><ReportIssue /><GreenSection /></main><Footer /></div>
 }

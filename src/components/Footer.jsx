@@ -4,14 +4,14 @@ const footerGroups = [
     links: [
       ['Home', '/'],
       ['Report an Issue', '/report-complaint'],
-      ['Explore Reports', '/#track'],
+      ['Explore Reports', '/explore-reports'],
     ],
   },
   {
     title: 'Resources',
     links: [
       ['How It Works', '/#track'],
-      ['Contact Us', '/#about'],
+      ['Contact Us', '/contact'],
     ],
   },
 ]

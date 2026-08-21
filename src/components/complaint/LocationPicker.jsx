@@ -19,8 +19,6 @@ function MapCenter({ location }) {
 }
 
 function LocationPicker({ value, onChange, error }) {
-  const mapLocation = value || defaultLocation
-
   function useCurrentLocation() {
     if (!navigator.geolocation) {
       onChange({ error: 'Geolocation is not supported by this browser.' })
@@ -46,5 +44,4 @@ function LocationPicker({ value, onChange, error }) {
   </section>
 }
 
-export { defaultLocation }
 export default LocationPicker

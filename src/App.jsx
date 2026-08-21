@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
-import { ArrowUpRight, Building2, Check, ChevronDown, CloudSun, Droplets, ImagePlus, Landmark, Lightbulb, Menu, MapPin, Minus, Moon, MoveUpRight, Route, Search, Send, ShieldCheck, Sun, Trash2, UserRound, Waves, X } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, CloudSun, Droplets, ImagePlus, Landmark, Menu, MapPin, Moon, Search, Sun, UserRound, X } from 'lucide-react'
 import './App.css'
 
 const liveInfo = { location: 'Ranchi, Jharkhand', temperature: '28°C', condition: 'Partly cloudy', humidity: '—' }
@@ -14,13 +14,14 @@ const weatherCondition = (code) => {
   if ([95, 96, 99].includes(code)) return 'Thunderstorm'
   return 'Partly cloudy'
 }
-const categories = [
-  { name: 'Roads', icon: Route, detail: 'Potholes, signs & surfaces' }, { name: 'Garbage', icon: Trash2, detail: 'Collection & clean-up' },
-  { name: 'Water', icon: Droplets, detail: 'Supply & leakage' }, { name: 'Streetlights', icon: Lightbulb, detail: 'Lighting & safety' },
-  { name: 'Drainage', icon: Waves, detail: 'Blocked drains & flooding' }, { name: 'Infrastructure', icon: Building2, detail: 'Public spaces & works' },
-]
-const statistics = [{ value: '12,480', label: 'Issues reported' }, { value: '8,920', label: 'Issues resolved' }, { value: '2,340', label: 'Active reports' }, { value: '18,700+', label: 'Citizens engaged' }]
 const fadeUp = { hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } } }
+const greenStages = [
+  ['01', 'Report', 'Submit an issue with location, description and supporting evidence.'],
+  ['02', 'Verify', 'The issue is categorized and reviewed.'],
+  ['03', 'Resolve', 'Authorities can act on verified civic complaints.'],
+  ['04', 'Track', 'Citizens can follow the progress.'],
+]
+const issueNames = ['Roads', 'Garbage', 'Water', 'Drainage', 'Streetlights', 'Infrastructure']
 
 function Logo() { return <a className="logo-mark" href="#top" aria-label="JanSetu home"><span>J</span><strong>JanSetu</strong></a> }
 function Navbar() {
@@ -43,13 +44,28 @@ function Hero() { return <section className="hero-section" id="top"><img classNa
 function ReportIssue() {
   return <section className="section report-section why-section" id="report"><img className="chakra-art" src="/chakra.png" alt="" aria-hidden="true" /><div className="why-content"><span className="why-kicker">Why JanSetu?</span><h2>Connecting citizens,<br /><em>civic issues,</em> and the<br />authorities responsible<br />for solving them.</h2><div className="why-accent" /><div className="civic-flow" aria-label="Citizens to civic action"><span>CITIZENS</span><i>→</i><span>CIVIC ISSUES</span><i>→</i><span>AUTHORITIES</span><i>→</i><span>ACTION</span></div><p>JanSetu creates a direct digital connection between citizens and civic authorities, making it easier to report issues, track progress, and build greater transparency in the communities we share.</p></div></section>
 }
-function IssueCategories() { return <section className="section categories-section"><div className="section-heading compact"><div><span className="section-kicker">02 / What needs fixing?</span><h2>Everyday issues.<br /><em>Real impact.</em></h2></div><p>Choose a category to get started. Small reports can lead to meaningful change.</p></div><div className="category-grid">{categories.map(({ name, icon: Icon, detail }, index) => <motion.a initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} transition={{ delay: index * 0.06 }} className="category-card" href="#report" key={name}><span className="category-icon"><Icon size={22} /></span><span><strong>{name}</strong><small>{detail}</small></span><MoveUpRight size={17} className="card-arrow" /></motion.a>)}</div></section> }
-function ImpactStats() { return <section className="stats-band"><div className="section stats-section"><div className="stats-intro"><span className="section-kicker">03 / The collective effort</span><h2>Progress you<br /><em>can see.</em></h2><p>When communities speak up, civic teams can move with clarity. Here is what we are building together.</p></div><div className="stats-grid">{statistics.map((stat, index) => <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} transition={{ delay: index * 0.1 }} key={stat.label}><strong>{stat.value}</strong><span>{stat.label}</span><i>{index === 0 ? <ArrowUpRight size={13} /> : <Minus size={13} />}</i></motion.div>)}</div></div></section> }
-function TrackComplaint() { const [status, setStatus] = useState(''); return <section className="section track-section" id="track"><div className="track-inner"><div><span className="section-kicker">04 / Stay informed</span><h2>Track your<br /><em>complaint.</em></h2><p>Enter your complaint ID to see its current status and follow every step towards resolution.</p></div><form className="track-form" onSubmit={(event) => { event.preventDefault(); setStatus('Tracking will be available when reports go live.') }}><label htmlFor="complaint-id">Complaint ID</label><div className="track-input"><input id="complaint-id" required placeholder="e.g. JS-2026-00421" onChange={() => setStatus('')} /><button className="button button-primary" type="submit">Track status <Search size={16} /></button></div>{status && <p className="status-message" role="status">{status}</p>}<span className="track-note"><ShieldCheck size={14} /> Your complaint details stay private.</span></form></div></section> }
+function GreenSection() {
+  return <section className="green-section" id="track">
+    <div className="green-inner">
+      <motion.div className="green-moment how-moment" initial="hidden" whileInView="visible" viewport={{ once: true, amount: .2 }} variants={fadeUp}>
+        <motion.div className="moment-heading" initial="hidden" whileInView="visible" viewport={{ once: true, amount: .3 }} variants={fadeUp}><span className="green-kicker how-kicker">01 / How JanSetu works</span><h2><span className="report-heading-dark">From Report</span><br />to <em>Resolution.</em></h2><p>One platform connecting citizens, civic issues, and the authorities responsible for action.</p></motion.div>
+        <div className="stage-list">{greenStages.map(([number, title, description], index) => <motion.div className="stage-item" key={title} initial="hidden" whileInView="visible" viewport={{ once: true, amount: .25 }} variants={fadeUp} transition={{ delay: index * .1 }}><span className="stage-number">{number}</span><div><h4>{title}</h4><p>{description}</p></div><span className="stage-status">READY</span></motion.div>)}</div>
+        <motion.div className="issue-strip" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}><span>COMMON CIVIC ISSUES</span>{issueNames.map((name) => <a href="#report" key={name}>{name}</a>)}</motion.div>
+      </motion.div>
+
+      <motion.div className="green-moment smart-moment" initial="hidden" whileInView="visible" viewport={{ once: true, amount: .18 }} variants={fadeUp}>
+        <motion.div className="smart-copy" initial="hidden" whileInView="visible" viewport={{ once: true, amount: .3 }} variants={fadeUp}><span className="green-kicker">02 / Smart civic reporting</span><h2>Smarter reporting.<br /><em>Better response.</em></h2><p>JanSetu uses image recognition to help identify civic issues and suggest the appropriate category while citizens report them.</p><motion.div className="benefit-row" initial="hidden" whileInView="visible" viewport={{ once: true, amount: .35 }} variants={fadeUp} transition={{ delay: .12 }}><div><span>FOR CITIZENS</span><strong>Report easily.<br />Track progress.<br />Stay informed.</strong></div><div><span>FOR AUTHORITIES</span><strong>Centralize complaints.<br />Prioritize issues.<br />Respond efficiently.</strong></div></motion.div></motion.div>
+        <motion.div className="ai-interface" initial="hidden" whileInView="visible" viewport={{ once: true, amount: .25 }} variants={fadeUp} transition={{ delay: .16 }} aria-label="Prototype AI recognition interface, coming soon"><div className="ai-toolbar"><span>JANSETU / REPORT ASSIST</span><i>PROTOTYPE</i></div><div className="ai-interface-body"><div className="ai-image"><ImagePlus size={22} /><span>CIVIC IMAGE</span><small>Upload preview</small><b /></div><div className="ai-analysis"><span className="analysis-label">AI ANALYSIS <i /></span><div className="analysis-line" /><small>VISUAL SIGNAL DETECTED</small></div><div className="ai-result"><small>SUGGESTED CATEGORY</small><strong>POTHOLE</strong><span>Confidence indicator <b>82%</b></span><div className="confidence"><i /></div></div></div></motion.div>
+      </motion.div>
+
+      <motion.div className="green-moment cta-moment" initial="hidden" whileInView="visible" viewport={{ once: true, amount: .35 }} variants={fadeUp}><span className="green-kicker">03 / Take action</span><h2>See something that<br />needs attention?</h2><p>Your report can be the first step toward action.</p><a className="green-cta-button" href="#report">Report an Issue <ArrowUpRight size={17} /></a></motion.div>
+    </div>
+  </section>
+}
 function Footer() { return <footer id="about"><div className="footer-main"><div><Logo /><p>A citizen-focused civic service<br />platform for Jharkhand.</p></div><div className="footer-links"><span>Explore</span><a href="#report">Report issue</a><a href="#track">Track complaint</a><a href="#about">About JanSetu</a></div><div className="footer-official"><Landmark size={18} /><span>Government of<br /><b>Jharkhand</b></span></div></div><div className="footer-bottom"><span>© 2026 JanSetu. Built for the people of Jharkhand.</span><span>Public service, made simpler.</span></div></footer> }
 
 function App() {
-  return <div className="app-shell"><Navbar /><main><Hero /><ReportIssue /><IssueCategories /><ImpactStats /><TrackComplaint /></main><Footer /></div>
+  return <div className="app-shell"><Navbar /><main><Hero /><ReportIssue /><GreenSection /></main><Footer /></div>
 }
 
 export default App

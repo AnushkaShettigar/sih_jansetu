@@ -396,7 +396,6 @@ export async function reopenComplaint(req, res) {
     complaint.updatedAt = reopenedAt;
 
     await complaint.save();
-    await notifyStatusChange(complaint, previousStatus, 'reopened', req.user.id);
     await notifyComplaintReopened(complaint, reason.trim());
 
     return res.status(200).json({ complaint: toPublicComplaint(complaint) });

@@ -1,8 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 @import "tailwindcss";
-:root { font-family: 'DM Sans', sans-serif; color: #daf1de; background: #051f20; font-synthesis: none; text-rendering: optimizeLegibility; }
+
+:root {
+  --bg: #050505;
+  --surface: #0d0d0e;
+  --surface-elevated: #151516;
+  --surface-glass: rgba(18, 18, 19, .76);
+  --text: #f4f5f2;
+  --text-muted: #929596;
+  --border: rgba(255, 255, 255, .12);
+  --accent: #7cff9b;
+  --accent-soft: rgba(124, 255, 155, .11);
+  --accent-glow: rgba(124, 255, 155, .2);
+  --success: #7cff9b;
+  --danger: #ff807c;
+  --radius: 12px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; background: #051f20; }
+body { margin: 0; min-width: 320px; background: var(--bg); }
 button, input, textarea, select { font: inherit; }
 a { color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }

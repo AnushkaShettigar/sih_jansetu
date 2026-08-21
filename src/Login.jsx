@@ -12,6 +12,8 @@ function Login() {
 	const [notice, setNotice] = useState('')
 	const [isProcessing, setIsProcessing] = useState(false)
 	const [showDigiLocker, setShowDigiLocker] = useState(false)
+	const [role, setRole] = useState('Citizen')
+	const [department, setDepartment] = useState('Roads')
 
 	function handleChange(event) {
 		setCredentials({ ...credentials, [event.target.name]: event.target.value })
@@ -29,8 +31,9 @@ function Login() {
 		setIsProcessing(true)
 		setError('')
 		setTimeout(() => {
-			if (username === 'admin' && password === 'admin123') { setDemoAuth('admin'); return navigate('/admin') }
-			if (username === 'Anushka_Shettigar' && password === 'citizen123') { setDemoAuth('citizen'); return navigate('/') }
+			if (role === 'Admin' && username === 'admin' && password === 'admin123') { setDemoAuth({ role: 'Admin' }); return navigate('/admin') }
+			if (role === 'Authority' && username === 'authority' && password === 'authority123') { setDemoAuth({ role: 'Authority', department }); return navigate('/authority') }
+			if (role === 'Citizen' && username === 'Anushka_Shettigar' && password === 'citizen123') { setDemoAuth({ role: 'Citizen' }); return navigate('/') }
 			setError('Incorrect username or password. Please try again.')
 			setIsProcessing(false)
 		}, 450)
@@ -44,6 +47,8 @@ function Login() {
 			<h1 id="login-title">Login</h1>
 			<p className="login-intro">Access your JanSetu account and stay connected to civic action.</p>
 			<form onSubmit={handleSubmit}>
+				<label htmlFor="login-role">Account type</label><select className="login-role-select" id="login-role" value={role} onChange={(event) => setRole(event.target.value)}><option>Citizen</option><option>Authority</option><option>Admin</option></select>
+				{role === 'Authority' && <><label htmlFor="login-department">Department</label><select className="login-role-select" id="login-department" value={department} onChange={(event) => setDepartment(event.target.value)}>{['Roads', 'Electrical', 'Water Supply', 'Sanitation', 'Drainage', 'Public Infrastructure'].map((item) => <option key={item}>{item}</option>)}</select></>}
 				<label htmlFor="username">Username</label>
 				<div className="login-input-wrap"><UserRound size={17} /><input id="username" name="username" value={credentials.username} onChange={handleChange} autoComplete="username" placeholder="Enter your username" required /></div>
 				<label htmlFor="password">Password</label>
@@ -58,7 +63,7 @@ function Login() {
 			<p className="login-register">Don't have an account? <button type="button" onClick={() => setNotice('Registration will be available soon.')}>Register</button></p>
 		</section>
 		<p className="login-footnote">Public service, made simpler.</p>
-		{showDigiLocker && <DemoDigiLocker onCancel={() => setShowDigiLocker(false)} onVerified={() => { setDemoAuth('citizen'); navigate('/') }} />}
+		{showDigiLocker && <DemoDigiLocker onCancel={() => setShowDigiLocker(false)} onVerified={() => { setDemoAuth({ role: 'Citizen' }); navigate('/') }} />}
 	</main>
 }
 

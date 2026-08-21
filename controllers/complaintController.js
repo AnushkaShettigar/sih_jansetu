@@ -1,7 +1,13 @@
 ﻿import mongoose from 'mongoose';
-import Complaint from '../models/Complaint.js';
+import Complaint, { COMPLAINT_STATUSES } from '../models/Complaint.js';
 import User from '../models/User.js';
 import Department from '../models/Department.js';
+import {
+  notifyStatusChange,
+  notifyAssignment,
+  notifyResolutionVerified,
+  notifyComplaintReopened,
+} from '../services/notificationService.js';
 
 function toPublicComplaint(complaint) {
   return {
@@ -14,6 +20,18 @@ function toPublicComplaint(complaint) {
     department: complaint.department,
     assignedTo: complaint.assignedTo,
     status: complaint.status,
+    assignedAt: complaint.assignedAt,
+    inProgressAt: complaint.inProgressAt,
+    resolvedAt: complaint.resolvedAt,
+    resolutionVerifiedAt: complaint.resolutionVerifiedAt,
+    resolutionRating: complaint.resolutionRating,
+    reopenedAt: complaint.reopenedAt,
+    reopenReason: complaint.reopenReason,
+    resolutionHistory: complaint.resolutionHistory,
+    reopenHistory: complaint.reopenHistory,
+    escalationLevel: complaint.escalationLevel,
+    escalatedAt: complaint.escalatedAt,
+    escalationHistory: complaint.escalationHistory,
     createdAt: complaint.createdAt,
     updatedAt: complaint.updatedAt,
   };
@@ -149,9 +167,10 @@ export async function assignComplaint(req, res) {
       return res.status(404).json({ message: 'Complaint not found.' });
     }
 
-    if (complaint.status !== 'verified') {
+    const previousStatus = complaint.status;
+    if (!['verified', 'reopened'].includes(complaint.status)) {
       return res.status(400).json({
-        message: `Cannot assign a complaint with status "${complaint.status}". Complaint must be "verified" first.`,
+        message: `Cannot assign a complaint with status "${complaint.status}". Complaint must be "verified" or "reopened" first.`,
       });
     }
 
@@ -174,9 +193,18 @@ export async function assignComplaint(req, res) {
     complaint.department = departmentDoc._id;
     complaint.assignedTo = authorityUser._id;
     complaint.status = 'assigned';
+    complaint.assignedAt = new Date();
+    complaint.inProgressAt = null;
+    complaint.resolvedAt = null;
+    complaint.resolutionVerifiedAt = null;
+    complaint.resolutionRating = null;
+    complaint.escalationLevel = 0;
+    complaint.escalatedAt = null;
     complaint.updatedAt = new Date();
 
     await complaint.save();
+    await notifyStatusChange(complaint, previousStatus, complaint.status, req.user.id);
+    await notifyAssignment(complaint, authorityUser._id);
 
     return res.status(200).json({ complaint: toPublicComplaint(complaint) });
   } catch (err) {
@@ -213,8 +241,7 @@ export async function updateStatus(req, res) {
       return res.status(400).json({ message: 'Invalid complaint ID.' });
     }
 
-    const validStatuses = ['reported', 'verified', 'assigned', 'in_progress', 'resolved'];
-    if (!nextStatus || !validStatuses.includes(nextStatus)) {
+    if (!nextStatus || !COMPLAINT_STATUSES.includes(nextStatus)) {
       return res.status(400).json({ message: 'A valid status value is required.' });
     }
 
@@ -225,9 +252,9 @@ export async function updateStatus(req, res) {
 
     const currentStatus = complaint.status;
 
-    if (currentStatus === 'verified' && nextStatus === 'assigned') {
+    if (['verified', 'reopened'].includes(currentStatus) && nextStatus === 'assigned') {
       return res.status(400).json({
-        message: 'Use PUT /api/complaints/:id/assign to move a complaint from "verified" to "assigned".',
+        message: 'Use PUT /api/complaints/:id/assign to move this complaint to "assigned".',
       });
     }
 
@@ -254,14 +281,127 @@ export async function updateStatus(req, res) {
       }
     }
 
+    if (nextStatus === 'in_progress' && !complaint.inProgressAt) {
+      complaint.inProgressAt = new Date();
+    }
+
+    if (nextStatus === 'resolved') {
+      const resolvedAt = new Date();
+      complaint.resolvedAt = resolvedAt;
+      complaint.resolutionVerifiedAt = null;
+      complaint.resolutionRating = null;
+      complaint.resolutionHistory.push({
+        resolvedAt,
+        resolvedBy: req.user.id,
+      });
+    }
+
     complaint.status = nextStatus;
     complaint.updatedAt = new Date();
 
     await complaint.save();
+    await notifyStatusChange(complaint, currentStatus, nextStatus, req.user.id);
 
     return res.status(200).json({ complaint: toPublicComplaint(complaint) });
   } catch (err) {
     console.error('updateStatus error:', err);
     return res.status(500).json({ message: 'Something went wrong while updating the complaint status.' });
+  }
+}
+
+// PUT /api/complaints/:id/verify-resolution
+// Auth: verifyJWT + authorize('citizen')
+// Only the citizen who reported the complaint may close its resolution.
+export async function verifyResolution(req, res) {
+  try {
+    const { id } = req.params;
+    const { rating } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid complaint ID.' });
+    }
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'A satisfaction rating from 1 to 5 is required.' });
+    }
+
+    const complaint = await Complaint.findById(id);
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found.' });
+    }
+    if (complaint.reportedBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'You do not have permission to verify this complaint.' });
+    }
+    if (complaint.status !== 'resolved') {
+      return res.status(400).json({ message: 'Only resolved complaints can be verified.' });
+    }
+
+    const verifiedAt = new Date();
+    complaint.status = 'closed';
+    complaint.resolutionVerifiedAt = verifiedAt;
+    complaint.resolutionRating = rating;
+    const latestResolution = complaint.resolutionHistory[complaint.resolutionHistory.length - 1];
+    if (latestResolution) {
+      latestResolution.resolutionVerifiedAt = verifiedAt;
+      latestResolution.resolutionRating = rating;
+    }
+    complaint.updatedAt = verifiedAt;
+
+    await complaint.save();
+    await notifyStatusChange(complaint, 'resolved', 'closed', req.user.id);
+    await notifyResolutionVerified(complaint, rating);
+
+    return res.status(200).json({ complaint: toPublicComplaint(complaint) });
+  } catch (err) {
+    console.error('verifyResolution error:', err);
+    return res.status(500).json({ message: 'Something went wrong while verifying the resolution.' });
+  }
+}
+
+// PUT /api/complaints/:id/reopen
+// Auth: verifyJWT + authorize('citizen')
+// Only the citizen who reported the complaint may reopen it.
+export async function reopenComplaint(req, res) {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid complaint ID.' });
+    }
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      return res.status(400).json({ message: 'A reopen reason is required.' });
+    }
+
+    const complaint = await Complaint.findById(id);
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found.' });
+    }
+    if (complaint.reportedBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'You do not have permission to reopen this complaint.' });
+    }
+    if (!['resolved', 'closed'].includes(complaint.status)) {
+      return res.status(400).json({ message: 'Only resolved or closed complaints can be reopened.' });
+    }
+
+    const previousStatus = complaint.status;
+    const reopenedAt = new Date();
+    complaint.status = 'reopened';
+    complaint.reopenedAt = reopenedAt;
+    complaint.reopenReason = reason.trim();
+    complaint.reopenHistory.push({
+      reopenedAt,
+      reopenedBy: req.user.id,
+      reason: reason.trim(),
+    });
+    complaint.updatedAt = reopenedAt;
+
+    await complaint.save();
+    await notifyStatusChange(complaint, previousStatus, 'reopened', req.user.id);
+    await notifyComplaintReopened(complaint, reason.trim());
+
+    return res.status(200).json({ complaint: toPublicComplaint(complaint) });
+  } catch (err) {
+    console.error('reopenComplaint error:', err);
+    return res.status(500).json({ message: 'Something went wrong while reopening the complaint.' });
   }
 }

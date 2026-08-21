@@ -1,145 +1,158 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import dns from 'dns';
-dns.setServers(['8.8.8.8', '1.1.1.1']); // Forces Node.js to use Google & Cloudflare DNS
+
+// Fix DNS resolution issues on Windows/macOS for SRV records
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://khushalimistry_db_user:A1q8ko43vYRcwsMo@sih.oxkh9pc.mongodb.net/?appName=SIH';
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Ensure uploads folder exists
+// Setup file uploads directory
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 app.use('/uploads', express.static(uploadDir));
 
-// Multer Image Storage Setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
+  },
 });
 const upload = multer({ storage });
 
-// Connect to MongoDB
+// MongoDB Connection targeting the 'hackathon' database
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  'mongodb+srv://khushalimistry_db_user:A1q8ko43vYRcwsMo@sih.oxkh9pc.mongodb.net/hackathon?appName=SIH';
+
 mongoose
   .connect(MONGO_URI)
-  .then(() => console.log('MongoDB Connected Successfully'))
+  .then(() => console.log('MongoDB Connected to "hackathon" database successfully'))
   .catch((err) => console.error('MongoDB Connection Error:', err));
 
-// Database Model
-const complaintSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  imageUrl: { type: String },
-  category: { type: String, required: true },
-  priorityScore: { type: Number, default: 0 },
-  location: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], required: true }, // [longitude, latitude]
-    address: { type: String },
+// Schema matching your existing 'issues' collection
+const issueSchema = new mongoose.Schema(
+  {
+    customId: { type: String },
+    title: { type: String, required: true },
+    category: { type: String, required: true },
+    description: { type: String, required: true },
+    priority: { type: String, default: 'Medium' },
+    status: { type: String, default: 'Pending' },
+    citizen: { type: String, default: 'Anonymous' },
+    location: { type: String, default: 'Ranchi, Jharkhand' },
+    imageUrl: { type: String },
   },
-  upvotes: { type: Number, default: 0 },
-  status: { type: String, enum: ['Pending', 'In Progress', 'Resolved'], default: 'Pending' },
-  createdAt: { type: Date, default: Date.now },
+  { timestamps: true }
+);
+
+issueSchema.pre('save', async function (next) {
+  if (!this.customId) {
+    const count = await mongoose.model('Issue').countDocuments();
+    const sequence = String(count + 1).padStart(4, '0');
+    this.customId = `JS-${sequence}`;
+  }
+  next();
 });
 
-complaintSchema.index({ location: '2dsphere' });
-const Complaint = mongoose.model('Complaint', complaintSchema);
+// Explicitly binding to the 'issues' collection inside 'hackathon' database
+const Issue = mongoose.model('Issue', issueSchema, 'issues');
 
-// Helper Utility: AI Category Detection
-const detectCategory = (title, description) => {
-  const text = `${title} ${description}`.toLowerCase();
-  if (text.includes('pothole') || text.includes('road') || text.includes('street')) return 'Roads';
-  if (text.includes('garbage') || text.includes('trash') || text.includes('waste')) return 'Garbage';
-  if (text.includes('water') || text.includes('pipe') || text.includes('leak')) return 'Water';
-  if (text.includes('light') || text.includes('lamp') || text.includes('dark')) return 'Streetlights';
-  if (text.includes('drain') || text.includes('flood') || text.includes('sewer')) return 'Drainage';
-  return 'Infrastructure';
-};
+// =================================================================
+// ROUTES
+// =================================================================
 
-// Helper Utility: CPS (Priority Score) Calculator
-const calculateCPS = (category) => {
-  const weights = { Water: 40, Roads: 30, Streetlights: 20, Garbage: 25, Drainage: 35, Infrastructure: 15 };
-  return 10 + (weights[category] || 10);
-};
-
-// --- ROUTES ---
-
-// Health Check Route
-app.get('/', (req, res) => {
-  res.json({ message: 'JanSetu API is working!' });
-});
-
-// 1. CREATE COMPLAINT (Handled by ReportIssue component in App.jsx)
+// Create new report
 app.post('/api/complaints', upload.single('image'), async (req, res) => {
   try {
-    const { title, description, category, address, latitude, longitude } = req.body;
+    const { title, category, description, citizen, priority, location } = req.body;
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    if (!description) {
-      return res.status(400).json({ error: 'Description is required.' });
-    }
-
-    const detectedCat = category && category !== 'Other' ? category : detectCategory(title || '', description);
-    const cps = calculateCPS(detectedCat);
-    const coords = [parseFloat(longitude) || 85.3096, parseFloat(latitude) || 23.3441];
-
-    const newComplaint = new Complaint({
-      title: title || `${detectedCat} issue at ${address || 'Unknown Location'}`,
+    const newIssue = new Issue({
+      title: title || `${category} issue near ${location || 'service area'}`,
+      category,
       description,
-      imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
-      category: detectedCat,
-      priorityScore: cps,
-      location: {
-        type: 'Point',
-        coordinates: coords,
-        address: address || 'Ranchi, Jharkhand',
-      },
+      citizen: citizen || 'Anonymous Citizen',
+      priority: priority || 'Medium',
+      location: location || 'Ranchi, Jharkhand',
+      imageUrl,
     });
 
-    await newComplaint.save();
-    res.status(201).json({ success: true, data: newComplaint });
+    await newIssue.save();
+    res.status(201).json({ message: 'Issue recorded successfully', issue: newIssue });
   } catch (error) {
-    console.error('Error creating complaint:', error);
-    res.status(500).json({ error: 'Server error while saving complaint.' });
+    console.error(error);
+    res.status(500).json({ error: 'Failed to record issue.' });
   }
 });
 
-// 2. GET ALL COMPLAINTS (Sorted by priority)
-app.get('/api/complaints', async (req, res) => {
+// Admin Stats
+app.get('/api/admin/stats', async (req, res) => {
   try {
-    const complaints = await Complaint.find().sort({ priorityScore: -1 });
-    res.json(complaints);
+    const total = await Issue.countDocuments();
+    const pending = await Issue.countDocuments({ status: 'Pending' });
+    const inProgress = await Issue.countDocuments({ status: 'In Progress' });
+    const resolved = await Issue.countDocuments({ status: 'Resolved' });
+
+    res.status(200).json({ total, pending, inProgress, resolved });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch metrics.' });
   }
 });
 
-// 3. TRACK SINGLE COMPLAINT BY ID (Handled by TrackComplaint component in App.jsx)
-app.get('/api/complaints/:id', async (req, res) => {
+// Admin Reports Queue
+app.get('/api/admin/reports', async (req, res) => {
   try {
-    const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) {
-      return res.status(404).json({ error: 'No complaint found with this ID.' });
-    }
-    res.json(complaint);
+    const reports = await Issue.find().sort({ createdAt: -1 });
+    const formatted = reports.map((r) => ({
+      id: r.customId || r._id,
+      mongoId: r._id,
+      title: r.title || r.description,
+      category: r.category,
+      priority: r.priority || 'Medium',
+      status: r.status || 'Pending',
+      citizen: r.citizen || 'Anonymous',
+    }));
+    res.status(200).json(formatted);
   } catch (error) {
-    res.status(400).json({ error: 'Invalid Complaint ID format.' });
+    res.status(500).json({ error: 'Failed to fetch issues.' });
   }
 });
 
-// Start Server
+// Admin Status Update
+app.patch('/api/admin/reports/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const updated = await Issue.findOneAndUpdate(
+      { $or: [{ customId: id }, { _id: mongoose.Types.ObjectId.isValid(id) ? id : null }] },
+      { status },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ error: 'Issue not found.' });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update issue status.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

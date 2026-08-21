@@ -34,14 +34,50 @@ function ComplaintForm() {
     return Object.keys(nextErrors).length === 0
   }
 
-  function submitComplaint(event) {
+  async function submitComplaint(event) {
     event.preventDefault()
     if (isSubmitting || !validate()) return
     setIsSubmitting(true)
-    setTimeout(() => {
-      setSuccess({ id: `JS-2026-${Math.floor(1000 + Math.random() * 9000)}`, submittedAt: new Date().toLocaleDateString('en-IN'), location })
+
+    try {
+      const formData = new FormData()
+      formData.append('title', form.title)
+      formData.append('description', form.description)
+      formData.append('category', form.category)
+      formData.append('severity', form.severity)
+      formData.append('safetyRisk', form.safetyRisk)
+      formData.append('additional', form.additional)
+      
+      // Extract formatted address string or default coordinates string
+      const locationText = location.address || `${location.coordinates[0].toFixed(4)}, ${location.coordinates[1].toFixed(4)}`
+      formData.append('location', locationText)
+
+      if (photo) {
+        formData.append('image', photo)
+      }
+
+      const response = await fetch('http://localhost:5000/api/complaints', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit complaint to the server.')
+      }
+
+      const result = await response.json()
+
+      setSuccess({
+        id: result.issue?.customId || `JS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        submittedAt: new Date().toLocaleDateString('en-IN'),
+        location,
+      })
+    } catch (err) {
+      console.error('Submission Error:', err)
+      alert('Error submitting complaint. Please check if backend server is running.')
+    } finally {
       setIsSubmitting(false)
-    }, 700)
+    }
   }
 
   if (success) return <section className="complaint-success" aria-labelledby="success-title"><div className="success-mark"><CheckCircle2 size={27} /></div><span className="complaint-kicker">Submission received</span><h2 id="success-title">Complaint Submitted Successfully</h2><p>Thank you for helping improve your community.</p><div className="success-details"><div><span>Complaint ID</span><strong>{success.id}</strong></div><div><span>Status</span><strong className="success-text">Submitted</strong></div><div><span>Category</span><strong>{form.category}</strong></div><div><span>Location</span><strong>{success.location.coordinates[0].toFixed(4)}, {success.location.coordinates[1].toFixed(4)}</strong></div></div><div className="success-actions"><a className="complaint-primary-button" href="/">Back to Home</a><button type="button" className="complaint-secondary-button" onClick={() => navigate('/#track')}>View Complaint</button></div></section>

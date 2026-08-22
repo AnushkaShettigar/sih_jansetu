@@ -9,10 +9,18 @@ import ReportComplaint from './pages/ReportComplaint'
 import ExploreReports from './pages/ExploreReports'
 import ComplaintDetails from './pages/ComplaintDetails'
 import ContactUs from './pages/ContactUs'
-import { isDemoAuthenticated } from './auth'
+import AuthorityDashboard from './pages/AuthorityDashboard'
+import Settings from './pages/Settings'
+import { getDemoUser, isDemoAuthenticated } from './auth'
 
 function ProtectedRoute({ children }) {
   return isDemoAuthenticated() ? children : <Navigate to="/login" replace />
+}
+
+function RoleRoute({ role, children }) {
+  const user = getDemoUser()
+  if (user?.role === role) return children
+  return <Navigate to={user?.role === 'Authority' ? '/authority' : user?.role === 'Admin' ? '/admin' : '/'} replace />
 }
 
 createRoot(document.getElementById('root')).render(
@@ -25,7 +33,9 @@ createRoot(document.getElementById('root')).render(
         <Route path="/complaint/:id" element={<ProtectedRoute><ComplaintDetails /></ProtectedRoute>} />
         <Route path="/contact" element={<ProtectedRoute><ContactUs /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><RoleRoute role="Admin"><AdminDashboard /></RoleRoute></ProtectedRoute>} />
+        <Route path="/authority" element={<ProtectedRoute><RoleRoute role="Authority"><AuthorityDashboard /></RoleRoute></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

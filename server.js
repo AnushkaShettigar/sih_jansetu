@@ -7,7 +7,6 @@ import path from 'path';
 import fs from 'fs';
 import dns from 'dns';
 
-<<<<<<< HEAD
 // Fix DNS resolution issues on Windows/macOS for SRV records
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
@@ -188,6 +187,3 @@ app.patch('/api/admin/reports/:id/status', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
-=======
-dns.setServers(['8.8.8.8', '1.1.1.1']);
->>>>>>> 2be19cdc891d045a057d5b582e80a4497fefa12a

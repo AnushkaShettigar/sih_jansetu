@@ -23,15 +23,19 @@ function ExploreReports() {
       try {
         setLoading(true)
 
+        // Automatically detects current IP or localhost and appends port 5000
+        const host = window.location.hostname || 'localhost'
+        const API_URL = `http://${host}:5000`
+
         // Fetch Live Reports
-        const reportsRes = await fetch('http://localhost:5000/api/admin/reports')
+        const reportsRes = await fetch(`${API_URL}/api/admin/reports`)
         if (reportsRes.ok) {
           const reportsData = await reportsRes.json()
           setReports(Array.isArray(reportsData) ? reportsData : [])
         }
 
         // Fetch Live Stats
-        const statsRes = await fetch('http://localhost:5000/api/admin/stats')
+        const statsRes = await fetch(`${API_URL}/api/admin/stats`)
         if (statsRes.ok) {
           const statsData = await statsRes.json()
           setStats(statsData)

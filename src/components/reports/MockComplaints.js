@@ -29,7 +29,4 @@ export const reportStats = [
   ['520', 'Reported'],
 ]
 
-const departmentByCategory = { Pothole: 'Roads', 'Normal Street': 'Roads', 'Broken Streetlight': 'Electrical', 'Water Leakage': 'Water Supply', 'Garbage Not Collected': 'Sanitation', 'Drainage / Waterlogging': 'Drainage', 'Damaged Public Infrastructure': 'Public Infrastructure' }
-const frontendComplaints = MockComplaints.map((item, index) => ({ ...item, department: departmentByCategory[item.category] || 'Public Infrastructure', severity: item.priority, distance: Number((1.2 + (index % 6) * .8).toFixed(1)), resolutionTime: `${2 + (index % 5)} days` }))
-
-export default frontendComplaints
+export default MockComplaints

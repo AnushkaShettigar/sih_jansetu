@@ -3,7 +3,6 @@ import { motion } from 'motion/react'
 import { ArrowUpRight, ChevronDown, CloudSun, Droplets, ImagePlus, Menu, MapPin, Moon, Search, Sun, UserRound, X } from 'lucide-react'
 import './App.css'
 import Footer from './components/Footer'
-import { clearDemoAuth, getDemoUser } from './auth'
 
 const liveInfo = { location: 'Ranchi, Jharkhand', temperature: '28°C', condition: 'Partly cloudy', humidity: '—' }
 const weatherCondition = (code) => {
@@ -27,8 +26,8 @@ const issueNames = ['Roads', 'Garbage', 'Water', 'Drainage', 'Streetlights', 'In
 
 function Logo() { return <a className="logo-mark" href="/" aria-label="JanSetu home"><span>J</span><strong>JanSetu</strong></a> }
 export function Navbar() {
-  const [open, setOpen] = useState(false); const [profileOpen, setProfileOpen] = useState(false); const links = [['Home', '/'], ['Report Issue', '/report-complaint'], ['Explore Reports', '/explore-reports'], ['Contact Us', '/contact']]; const user = getDemoUser()
-  return <header className="navbar-wrap"><nav className="navbar" aria-label="Main navigation"><a className="nav-brand" href="/" aria-label="JanSetu home">JanSetu</a><div className={`nav-links ${open ? 'is-open' : ''}`}>{links.map(([label, href]) => <a key={label} href={href} onClick={() => setOpen(false)}>{label}</a>)}</div><div className="nav-profile-wrap"><button className="gov-mark nav-profile-button" type="button" aria-expanded={profileOpen} aria-label="Open profile menu" onClick={() => setProfileOpen(!profileOpen)}><UserRound size={20} /></button>{profileOpen && <div className="profile-menu"><strong>{user?.department ? `${user.department} Authority` : user?.role || 'Citizen'}</strong><a href="/settings">Profile</a><a href="/explore-reports">My Complaints</a><a href="/settings">Settings</a><button onClick={() => { clearDemoAuth(); window.location.href = '/login' }}>Logout</button></div>}</div><button className="icon-button menu-button" type="button" aria-label="Toggle navigation" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X size={22} /> : <Menu size={22} />}</button></nav></header>
+  const [open, setOpen] = useState(false); const links = [['Home', '/'], ['Report Issue', '/report-complaint'], ['Explore Reports', '/explore-reports'], ['Contact Us', '/contact']]
+  return <header className="navbar-wrap"><nav className="navbar" aria-label="Main navigation"><a className="nav-brand" href="/" aria-label="JanSetu home">JanSetu</a><div className={`nav-links ${open ? 'is-open' : ''}`}>{links.map(([label, href]) => <a key={label} href={href} onClick={() => setOpen(false)}>{label}</a>)}</div><div className="gov-mark" title="Government of Jharkhand" aria-label="Government of Jharkhand"><UserRound size={20} /></div><button className="icon-button menu-button" type="button" aria-label="Toggle navigation" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X size={22} /> : <Menu size={22} />}</button></nav></header>
 }
 function LiveInfo() {
   const [time, setTime] = useState(new Date()); useEffect(() => { const timer = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(timer) }, [])

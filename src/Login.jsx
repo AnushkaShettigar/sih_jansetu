@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { ArrowRight, Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import DemoDigiLocker from './components/DemoDigiLocker'
@@ -18,7 +18,7 @@ function Login() {
 		setError('')
 	}
 
-	function handleSubmit(event) {
+	async function handleSubmit(event) {
 		event.preventDefault()
 		if (isProcessing) return
 		const { username, password } = credentials
@@ -28,12 +28,22 @@ function Login() {
 		}
 		setIsProcessing(true)
 		setError('')
-		setTimeout(() => {
-			if (username === 'admin' && password === 'admin123') { setDemoAuth('admin'); return navigate('/admin') }
-			if (username === 'Anushka_Shettigar' && password === 'citizen123') { setDemoAuth('citizen'); return navigate('/') }
-			setError('Incorrect username or password. Please try again.')
+		try {
+			if (username.includes('@')) {
+				const response = await fetch('http://localhost:5000/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: username.trim(), password }) })
+				const payload = await response.json()
+				if (!response.ok) throw new Error(payload.message || 'Incorrect username or password. Please try again.')
+				setDemoAuth({ ...payload.user, token: payload.token })
+				return navigate(payload.user.role === 'admin' ? '/admin' : payload.user.role === 'authority' ? '/authority' : '/')
+			}
+			if (username === 'admin' && password === 'admin123') { setDemoAuth({ role: 'Admin' }); return navigate('/admin') }
+			if (username === 'authority' && password === 'authority123') { setDemoAuth({ role: 'Authority', department: 'Roads' }); return navigate('/authority') }
+			if (username === 'Anushka_Shettigar' && password === 'citizen123') { setDemoAuth({ role: 'Citizen' }); return navigate('/') }
+			throw new Error('Incorrect username or password. Please try again.')
+		} catch (submitError) {
+			setError(submitError.message)
 			setIsProcessing(false)
-		}, 450)
+		}
 	}
 
 	return <main className="login-page">
@@ -58,7 +68,7 @@ function Login() {
 			<p className="login-register">Don't have an account? <button type="button" onClick={() => setNotice('Registration will be available soon.')}>Register</button></p>
 		</section>
 		<p className="login-footnote">Public service, made simpler.</p>
-		{showDigiLocker && <DemoDigiLocker onCancel={() => setShowDigiLocker(false)} onVerified={() => { setDemoAuth('citizen'); navigate('/') }} />}
+		{showDigiLocker && <DemoDigiLocker onCancel={() => setShowDigiLocker(false)} onVerified={() => { setDemoAuth({ role: 'Citizen' }); navigate('/') }} />}
 	</main>
 }
 

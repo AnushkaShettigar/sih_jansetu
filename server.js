@@ -129,6 +129,10 @@ app.get('/api/admin/reports', async (req, res) => {
   try {
     const reports = await Issue.find().sort({ createdAt: -1 });
 
+    // Dynamic host detection so images load across network
+    const host = req.headers.host || `localhost:${PORT}`;
+    const protocol = req.protocol || 'http';
+
     const formatted = reports.map((r) => {
       // Safe coordinate parser to avoid map render crashes
       let coords = [19.076, 72.8777]; // Default Mumbai center
@@ -152,7 +156,8 @@ app.get('/api/admin/reports', async (req, res) => {
         location: r.location || 'Mumbai, Maharashtra',
         city: 'Mumbai',
         coordinates: coords,
-        imageUrl: r.imageUrl ? `http://localhost:${PORT}${r.imageUrl}` : null,
+        // CHANGED: dynamically binds current request host instead of hardcoded localhost
+        imageUrl: r.imageUrl ? `${protocol}://${host}${r.imageUrl}` : null,
         createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
       };
     });
@@ -184,6 +189,7 @@ app.patch('/api/admin/reports/:id/status', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// CHANGED: Listens on '0.0.0.0' so external PCs on the network can connect
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT} (Accessible across local network)`);
 });

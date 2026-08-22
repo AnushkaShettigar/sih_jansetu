@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import ImageUpload from './ImageUpload'
 import LocationPicker from './LocationPicker'
 import DuplicateWarning from './DuplicateWarning'
+import { loadClassifierModel, classifyImage } from '../../imageClassifier'
 
 const categories = ['Pothole', 'Broken Streetlight', 'Garbage Not Collected', 'Water Leakage', 'Drainage / Waterlogging', 'Damaged Public Infrastructure', 'Normal Street']
 const severities = ['Low', 'Medium', 'High', 'Critical']
@@ -12,10 +13,40 @@ function ComplaintForm() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ title: '', description: '', category: '', severity: 'Medium', safetyRisk: false, additional: '' })
   const [photo, setPhoto] = useState(null)
+  const [classificationResult, setClassificationResult] = useState(null)
   const [location, setLocation] = useState(null)
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState(null)
+
+  useEffect(() => {
+    loadClassifierModel().catch(err => console.error("Failed to load model", err))
+  }, [])
+
+  function handlePhotoChange(newPhoto) {
+    setPhoto(newPhoto)
+    setClassificationResult(null)
+    if (newPhoto) {
+      try {
+        const img = new Image()
+        img.src = URL.createObjectURL(newPhoto)
+        img.onload = async () => {
+          try {
+            const result = await classifyImage(img)
+            console.log("Classification result:", result)
+            setClassificationResult(result)
+            if (result && result.category && categories.includes(result.category)) {
+              setForm(prev => ({ ...prev, category: result.category }))
+            }
+          } catch (err) {
+            console.error("Classification error:", err)
+          }
+        }
+      } catch (err) {
+        console.error("Error creating image for classification:", err)
+      }
+    }
+  }
 
   function updateField(event) {
     const { name, value, type, checked } = event.target
@@ -84,7 +115,15 @@ function ComplaintForm() {
 
   return <form className="complaint-form" onSubmit={submitComplaint} noValidate>
     <section className="complaint-form-section"><span className="complaint-label">01 <b>ISSUE DETAILS</b></span><div className="complaint-grid"><div className="complaint-field complaint-field-wide"><label htmlFor="complaint-title">Title <em>Required</em></label><input id="complaint-title" name="title" value={form.title} onChange={updateField} placeholder="e.g. Large pothole near Main Road" aria-invalid={Boolean(errors.title)} />{errors.title && <small className="complaint-field-error">{errors.title}</small>}</div><div className="complaint-field complaint-field-wide"><label htmlFor="complaint-description">Description <em>Required</em></label><textarea id="complaint-description" name="description" value={form.description} onChange={updateField} placeholder="Describe the issue, its exact surroundings, and how it affects the community." rows="5" aria-invalid={Boolean(errors.description)} />{errors.description && <small className="complaint-field-error">{errors.description}</small>}</div><div className="complaint-field"><label htmlFor="complaint-category">Category <em>Required</em></label><select id="complaint-category" name="category" value={form.category} onChange={updateField} aria-invalid={Boolean(errors.category)}><option value="">Select a category</option>{categories.map((category) => <option key={category}>{category}</option>)}</select>{errors.category && <small className="complaint-field-error">{errors.category}</small>}</div><fieldset className="severity-field"><legend>Severity</legend><div>{severities.map((severity) => <label className={form.severity === severity ? 'is-selected' : ''} key={severity}><input type="radio" name="severity" value={severity} checked={form.severity === severity} onChange={updateField} />{severity}</label>)}</div></fieldset></div></section>
-    <section className="complaint-form-section"><ImageUpload file={photo} onChange={setPhoto} />{errors.photo && <small className="complaint-field-error">{errors.photo}</small>}</section>
+    <section className="complaint-form-section">
+      <ImageUpload file={photo} onChange={handlePhotoChange} />
+      {classificationResult && (
+        <div className="text-sm mt-2 p-2 bg-blue-50 text-blue-700 rounded border border-blue-100">
+          <strong>AI Suggestion:</strong> {classificationResult.category}
+        </div>
+      )}
+      {errors.photo && <small className="complaint-field-error">{errors.photo}</small>}
+    </section>
     <LocationPicker value={location} onChange={setLocation} error={errors.location} />
     <section className="complaint-form-section additional-section"><span className="complaint-label">04 <b>ADDITIONAL INFORMATION</b></span><div className="complaint-field"><label htmlFor="complaint-additional">Anything else we should know? <em>Optional</em></label><textarea id="complaint-additional" name="additional" value={form.additional} onChange={updateField} placeholder="Add any useful context for the civic team." rows="3" /></div><label className="safety-check"><input type="checkbox" name="safetyRisk" checked={form.safetyRisk} onChange={updateField} /><span>This issue poses an immediate safety risk.</span></label></section>
     <DuplicateWarning />

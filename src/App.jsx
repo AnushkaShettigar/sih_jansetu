@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { ArrowUpRight, ChevronDown, CloudSun, Droplets, ImagePlus, Menu, MapPin, Moon, Search, Sun, UserRound, X } from 'lucide-react'
 import './App.css'
 import Footer from './components/Footer'
+import { loadClassifierModel, classifyImage } from "./imageClassifier";
 
 const liveInfo = { location: 'Ranchi, Jharkhand', temperature: '28°C', condition: 'Partly cloudy', humidity: '—' }
 const weatherCondition = (code) => {
@@ -36,7 +37,7 @@ function LiveInfo() {
     fetch('https://api.open-meteo.com/v1/forecast?latitude=23.6102&longitude=85.2799&current=temperature_2m,weather_code,relative_humidity_2m&timezone=auto')
       .then((response) => { if (!response.ok) throw new Error('Weather request failed'); return response.json() })
       .then(({ current }) => setWeather({ temperature: `${Math.round(current.temperature_2m)}°C`, condition: weatherCondition(current.weather_code), humidity: `${current.relative_humidity_2m}%` }))
-      .catch(() => {})
+      .catch(() => { })
   }, [])
   const currentTime = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(time)
   return <div className="live-info glass-panel" aria-label="Local civic information"><div className="info-top"><span className="live-dot" /> Live in your community <ChevronDown size={15} /></div><div className="info-location"><MapPin size={18} /><span>{liveInfo.location}</span></div><div className="info-grid"><div><CloudSun size={17} /><small>Weather</small><strong>{weather.temperature}</strong></div><div><Sun size={17} /><small>Condition</small><strong>{weather.condition}</strong></div><div><Droplets size={17} /><small>Humidity</small><strong>{weather.humidity}</strong></div><div><Moon size={17} /><small>Local time</small><strong>{currentTime}</strong></div></div></div>

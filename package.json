@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@teachablemachine/image": "^0.8.5",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.33.0",
     "mongoose": "^9.9.3",
